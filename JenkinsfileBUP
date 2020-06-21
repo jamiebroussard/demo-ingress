@@ -1,0 +1,88 @@
+#!/usr/bin/groovy
+
+@Library('xcijv-shared-library') _  // Import Jenkins Global Library
+
+pipeline {
+  agent {label 'sandbox'}
+  environment {
+    region          = "us-east-1"
+    build_id        = "${BUILD_NUMBER}" // Jenkins build ID
+  }
+  // START THE PIPELINE
+  stages {
+    stage ("Checkout SCM") {
+      steps {
+        deleteDir()
+        checkout scm
+      }
+    }
+    stage ('Scan') {
+      steps {
+        script {
+          sh "echo Scan yaml files TBD"
+        }
+      }
+    }
+    stage ('Deploy to Dev') {
+      environment {
+        cluster = "eks-dev"
+      }
+      steps {
+        script {
+          // Setup kubectl
+          aws.updateKubeConfig("$region", "$cluster")
+          // apply
+          sh "kubectl apply -f sandbox_cluster_ingress.yml"
+          sh "kubectl get ingress"
+        }
+      }
+    }
+    stage ("Deploy to QA") {
+      environment {
+        cluster = "xcijv-dev-eks-cluster-alpha"
+      }
+      steps {
+        script {
+        input message: 'Deploy to QA? (Click "Proceed" to continue)'
+        // Setup kubectl
+        aws.updateKubeConfig("$region", "$cluster")
+        // apply
+        sh "kubectl apply -f dev_cluster_alpha_ingress.yml"
+        sh "kubectl get ingress"
+        }
+      }
+    }
+    stage ("Deploy to Stage") {
+      environment {
+        cluster = "eks-stage"
+      }
+      steps {
+        script {
+          input message: 'Deploy to Stage? (Click "Proceed" to continue)'
+          // Setup kubectl
+          aws.updateKubeConfig("$region", "$cluster")
+
+        }
+      }
+    }
+    stage ("Deploy to Prod") {
+      environment {
+        cluster = "eks-prod"
+      }
+      steps {
+        script {
+          input message: 'Deploy to Prod? (Click "Proceed" to continue)'
+          // Setup kubectl
+          aws.updateKubeConfig("$region", "$cluster")
+        }
+      }
+    }
+    stage ("Notify") {
+      steps {
+        script {
+          utility.sendNotification()
+        }
+      }
+    }
+  }
+}
