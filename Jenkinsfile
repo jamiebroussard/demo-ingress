@@ -1,6 +1,6 @@
 #!/usr/bin/groovy
 
-@Library('jenkins-shared-lib') _  // Import Jenkins Global Library
+@Library('jbroussard-shared') _  // Import Jenkins Global Library
 
 pipeline {
   agent any
